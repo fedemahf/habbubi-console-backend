@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
+import { GetUserDto } from './dto/get-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -11,23 +12,36 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  public findAll(): Promise<GetUserDto[]> {
+    return this.usersRepository.find().then((users) => {
+      return users.map((user) => {
+        return GetUserDto.fromUser(user);
+      });
+    });
   }
 
-  findOne(id: number): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id });
+  public findOne(id: number): Promise<GetUserDto | null> {
+    return this.usersRepository.findOneBy({ id }).then((user) => {
+      if (user) {
+        return GetUserDto.fromUser(user);
+      }
+      return null;
+    });
   }
 
-  async remove(id: string): Promise<void> {
-    await this.usersRepository.delete(id);
+  public remove(id: string): Promise<string> {
+    return this.usersRepository.delete(id).then(() => {
+      return id;
+    });
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  public create(createUserDto: CreateUserDto): Promise<GetUserDto> {
     const user = new User();
     user.username = createUserDto.username;
     user.password = createUserDto.password;
     user.email = createUserDto.email;
-    return await this.usersRepository.save(user);
+    return this.usersRepository.save(user).then((user) => {
+      return GetUserDto.fromUser(user);
+    });
   }
 }
